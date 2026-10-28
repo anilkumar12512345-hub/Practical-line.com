@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Practical Line - Social Hub</title>
     
-    <!-- Firebase App & Firestore CDN Scripts -->
+    <!-- Firebase App, Firestore & Analytics CDN Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
 
     <style>
         * {
@@ -41,26 +42,30 @@
         .top-bar {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
+            justify-content: space-between;
             padding: 15px;
             background-color: #0f172a;
             border-bottom: 1px solid #1e293b;
             z-index: 10;
         }
 
-        .top-bar-logo {
-            height: 35px;
-            object-fit: contain;
-        }
-
         .top-bar-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 800;
             background: linear-gradient(90deg, #38bdf8, #818cf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: 1px;
+        }
+
+        .live-counter-badge {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid #38bdf8;
+            color: #38bdf8;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
         }
 
         #splashScreen {
@@ -141,20 +146,20 @@
             font-size: 0.9rem;
         }
 
-        /* 3D EARTH GLOBE SPHERE CONTAINER */
+        /* 3D GOOGLE MAPS STYLE EARTH GLOBE CONTAINER */
         .globe-container {
             position: relative;
-            width: 260px;
-            height: 260px;
-            margin: 15px auto 30px;
-            perspective: 900px;
+            width: 270px;
+            height: 270px;
+            margin: 15px auto 25px;
+            perspective: 1000px;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(15,23,42,0.8) 70%);
+            background: radial-gradient(circle, rgba(2, 132, 199, 0.25) 0%, rgba(11, 15, 25, 0.9) 75%);
             border-radius: 50%;
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            box-shadow: inset 0 0 25px rgba(56, 189, 248, 0.2), 0 0 20px rgba(2, 132, 199, 0.3);
+            border: 2px solid rgba(56, 189, 248, 0.4);
+            box-shadow: inset 0 0 30px rgba(56, 189, 248, 0.3), 0 0 25px rgba(2, 132, 199, 0.4);
         }
 
         .globe-sphere {
@@ -162,52 +167,64 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            animation: rotateGlobe 20s linear infinite;
+            animation: rotateGlobe 22s linear infinite;
         }
 
         .globe-sphere:hover {
             animation-play-state: paused;
         }
 
-        .globe-item {
+        /* MAP PIN & PROFILE STYLE */
+        .globe-map-pin {
             position: absolute;
             left: 50%;
             top: 50%;
-            width: 50px;
-            height: 50px;
-            margin-left: -25px;
-            margin-top: -25px;
-            border-radius: 50%;
-            border: 2px solid #38bdf8;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+            width: 48px;
+            height: 58px;
+            margin-left: -24px;
+            margin-top: -58px;
             cursor: pointer;
-            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.3s ease;
         }
 
-        .globe-item img {
-            width: 100%;
-            height: 100%;
+        .globe-map-pin img {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             object-fit: cover;
+            border: 2px solid #ef4444; /* Google Map Red border indicator */
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+            background: #111827;
         }
 
-        .globe-item span {
+        .map-pin-pointer {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 10px solid #ef4444; /* Red map marker tail */
+            margin-top: -3px;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+        }
+
+        .globe-map-pin span {
             position: absolute;
-            bottom: -16px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: -18px;
             font-size: 0.6rem;
             color: #cbd5e1;
             white-space: nowrap;
             background: rgba(15, 23, 42, 0.9);
-            padding: 1px 5px;
+            padding: 1px 6px;
             border-radius: 6px;
             border: 1px solid #334155;
         }
 
         @keyframes rotateGlobe {
-            0% { transform: rotateY(0deg) rotateX(15deg); }
-            100% { transform: rotateY(360deg) rotateX(15deg); }
+            0% { transform: rotateY(0deg) rotateX(12deg); }
+            100% { transform: rotateY(360deg) rotateX(12deg); }
         }
 
         .global-section h3 {
@@ -291,6 +308,34 @@
             word-break: break-all;
         }
 
+        /* RATING WIDGET */
+        .rating-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .stars-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        .star {
+            color: #475569;
+            transition: color 0.2s;
+        }
+
+        .star.selected {
+            color: #f59e0b;
+        }
+
         .bottom-nav {
             position: fixed;
             bottom: 0; 
@@ -326,8 +371,8 @@
     <div class="app-container">
         
         <div class="top-bar">
-            <img src="logo.png" class="top-bar-logo" alt="Practical Logo">
             <span class="top-bar-title">PRACTICAL LINE</span>
+            <div class="live-counter-badge" id="liveCounterBadge">👥 Joined: 0</div>
         </div>
 
         <div id="splashScreen">
@@ -344,9 +389,9 @@
                     <button class="btn" style="width: auto; padding: 0 20px;" onclick="searchByCode()">Search</button>
                 </div>
 
-                <!-- 3D EARTH GLOBE ROTATING SPHERE -->
+                <!-- 3D GOOGLE MAPS STYLE EARTH GLOBE -->
                 <div class="global-section">
-                    <h3>Global Earth 3D Creators</h3>
+                    <h3>Live Google Map Earth Pins</h3>
                     <div class="globe-container">
                         <div class="globe-sphere" id="globeSphere"></div>
                     </div>
@@ -356,6 +401,19 @@
                     <h3>All Global Creators</h3>
                     <div class="global-users" id="globalUsersList"></div>
                 </div>
+
+                <!-- WEBSITE RATING SECTION -->
+                <div class="rating-box">
+                    <h3 style="font-size: 1rem; color: #cbd5e1;">Rate Our Website</h3>
+                    <div class="stars-container" id="starsContainer">
+                        <span class="star" onclick="rateApp(1)">★</span>
+                        <span class="star" onclick="rateApp(2)">★</span>
+                        <span class="star" onclick="rateApp(3)">★</span>
+                        <span class="star" onclick="rateApp(4)">★</span>
+                        <span class="star" onclick="rateApp(5)">★</span>
+                    </div>
+                    <p id="ratingStatus" style="font-size: 0.8rem; color: #94a3b8;">Click stars to rate!</p>
+                </div>
             </div>
 
             <div id="joinPage" class="page">
@@ -364,7 +422,7 @@
                 <input type="text" id="regName" placeholder="Mee Peru (Full Name)">
                 
                 <label style="font-size: 0.85rem; color: #94a3b8; display:block; margin: 5px 0;">Mee Photo Select Cheyandi:</label>
-                <input type="file" id="regPhotoFile" accept="image/*" onchange="convertImage(event)" style="padding: 10px; margin-bottom: 12px;">
+                <input type="file" id="regPhotoFile" accept="image/*" onchange="convertAndCompressImage(event)" style="padding: 10px; margin-bottom: 12px;">
 
                 <label style="font-size: 0.85rem; color: #94a3b8; display:block; margin: 10px 0 5px;">Social Media Links:</label>
                 <div id="linksContainer">
@@ -403,16 +461,21 @@
     <script>
         // --- REAL FIREBASE CONFIGURATION ---
         const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForPracticalLineHub-Demo",
-            authDomain: "practical-line.firebaseapp.com",
-            projectId: "practical-line",
-            storageBucket: "practical-line.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123:web:abc"
+          apiKey: "AIzaSyDe0CXHpSv5q9xmjJroSe8B7BVCdQA6wfM",
+          authDomain: "practical-line-683de.firebaseapp.com",
+          projectId: "practical-line-683de",
+          storageBucket: "practical-line-683de.firebasestorage.app",
+          messagingSenderId: "11132140502",
+          appId: "1:11132140502:web:531aeedc2ff0600a908277",
+          measurementId: "G-BDYQN35K2T"
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const analytics = firebase.analytics();
+
+        let currentActiveUserCode = "";
+        let uploadedPhotoData = "https://via.placeholder.com/150/38bdf8/ffffff?text=User";
 
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -423,15 +486,31 @@
             loadGlobalUsersFromCloud();
         });
 
-        let currentActiveUserCode = "7777";
-        let uploadedPhotoData = "https://via.placeholder.com/150/38bdf8/ffffff?text=User";
-
-        function convertImage(event) {
+        function convertAndCompressImage(event) {
             const file = event.target.files[0];
             if(file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    uploadedPhotoData = e.target.result;
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const maxSize = 200;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                        } else {
+                            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        uploadedPhotoData = canvas.toDataURL('image/jpeg', 0.7);
+                    }
                 };
                 reader.readAsDataURL(file);
             }
@@ -444,7 +523,7 @@
             document.getElementById(pageId).classList.add('active');
             if(element) element.classList.add('active');
 
-            if(pageId === 'profilePage') {
+            if(pageId === 'profilePage' && currentActiveUserCode) {
                 renderProfileView(currentActiveUserCode);
             }
         }
@@ -458,7 +537,6 @@
             container.appendChild(newBox);
         }
 
-        // Register User & Save to Cloud Firestore
         async function registerUser() {
             const name = document.getElementById('regName').value.trim();
             const linkInputs = document.querySelectorAll('.social-link-input');
@@ -467,34 +545,46 @@
                 if(input.value.trim() !== '') links.push(input.value.trim());
             });
 
-            if(!name) { alert('Dhayachesi mee peru enter cheyandi!'); return; }
+            if(!name) { alert('దయచేసి మీ పేరు ఎంటర్ చేయండి!'); return; }
 
-            let uniqueCode = Math.floor(1000 + Math.random() * 9000).toString();
+            let uniqueCode;
+            let docExists = true;
+            let attempts = 0;
+
+            while (docExists && attempts < 10) {
+                uniqueCode = Math.floor(1000 + Math.random() * 9000).toString();
+                const docCheck = await db.collection("users").doc(uniqueCode).get();
+                if (!docCheck.exists) {
+                    docExists = false;
+                }
+                attempts++;
+            }
 
             const userData = {
                 code: uniqueCode,
                 name: name,
                 photo: uploadedPhotoData,
-                links: links
+                links: links,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             try {
                 await db.collection("users").doc(uniqueCode).set(userData);
                 currentActiveUserCode = uniqueCode;
-                alert(`Abhinandanalu! Mee Unique Code: ${uniqueCode}`);
+                alert(`అభిప్రాయాలు విజయవంతం! మీ Unique Code: ${uniqueCode}`);
                 
-                loadGlobalUsersFromCloud();
                 switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
             } catch (error) {
-                console.error("Error writing document: ", error);
-                alert("Error saving data! Try again.");
+                console.error("Error saving data: ", error);
+                alert("డేటా సేవ్ చేయడంలో సమస్య ఏర్పడింది. మళ్లీ ప్రయత్నించండి.");
             }
         }
 
-        // Real-time Cloud Sync for Global List & 3D Earth Globe
+        // Real-time Cloud Sync with Google Maps Style Pins on Rotating Globe
         function loadGlobalUsersFromCloud() {
             const globalContainer = document.getElementById('globalUsersList');
             const globeSphere = document.getElementById('globeSphere');
+            const counterBadge = document.getElementById('liveCounterBadge');
 
             db.collection("users").onSnapshot((querySnapshot) => {
                 globalContainer.innerHTML = '';
@@ -505,7 +595,6 @@
                     let user = doc.data();
                     usersList.push(user);
                     
-                    // Render in All Creators List
                     globalContainer.innerHTML += `
                         <div class="user-circle-card" onclick="viewUserDirectly('${user.code}')">
                             <img src="${user.photo}" class="profile-thumb" alt="${user.name}">
@@ -514,14 +603,15 @@
                     `;
                 });
 
+                counterBadge.innerText = `👥 Joined: ${usersList.length}`;
+
                 if(usersList.length === 0) {
                     globalContainer.innerHTML = `<p style="color:#64748b; font-size:0.85rem;">No creators yet.</p>`;
                     return;
                 }
 
-                // Render 3D Earth Globe Sphere with scattered profiles
                 const total = usersList.length;
-                const radius = 100;
+                const radius = 105;
 
                 usersList.forEach((user, idx) => {
                     const phi = Math.acos(-1 + (2 * idx) / total);
@@ -532,12 +622,13 @@
                     const z = radius * Math.cos(phi);
 
                     const item = document.createElement('div');
-                    item.className = 'globe-item';
+                    item.className = 'globe-map-pin';
                     item.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
                     item.onclick = () => viewUserDirectly(user.code);
 
                     item.innerHTML = `
                         <img src="${user.photo}" alt="${user.name}">
+                        <div class="map-pin-pointer"></div>
                         <span>${user.name}</span>
                     `;
                     globeSphere.appendChild(item);
@@ -545,22 +636,26 @@
             });
         }
 
-        // Search Profile by Code from Cloud
         async function searchByCode() {
             const inputCode = document.getElementById('searchInput').value.trim();
             if(inputCode.length !== 4) {
-                alert('Sarigga 4-ankela code enter cheyandi!');
+                alert('సరిగ్గా 4-అంకెల కోడ్ ఎంటర్ చేయండి!');
                 return;
             }
 
-            const docRef = db.collection("users").doc(inputCode);
-            const doc = await docRef.get();
+            try {
+                const docRef = db.collection("users").doc(inputCode);
+                const doc = await docRef.get();
 
-            if (doc.exists) {
-                currentActiveUserCode = inputCode;
-                switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
-            } else {
-                alert('Ee code ki e profile dorakaledhu!');
+                if (doc.exists) {
+                    currentActiveUserCode = inputCode;
+                    switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
+                } else {
+                    alert('ఈ కోడ్‌తో ఏ ప్రొఫైల్ దొరకలేదు!');
+                }
+            } catch (error) {
+                console.error("Search error: ", error);
+                alert("సెర్చ్ చేయడంలో లోపం ఏర్పడింది.");
             }
         }
 
@@ -569,33 +664,59 @@
             switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
         }
 
-        // Render Profile View
         async function renderProfileView(code) {
             const profileContainer = document.getElementById('profileContainer');
             
-            const docRef = db.collection("users").doc(code);
-            const doc = await docRef.get();
+            try {
+                const docRef = db.collection("users").doc(code);
+                const doc = await docRef.get();
 
-            if(!doc.exists) {
-                profileContainer.innerHTML = `<p style="text-align:center;">E profile enchukoledhu.</p>`;
-                return;
-            }
+                if(!doc.exists) {
+                    profileContainer.innerHTML = `<p style="text-align:center;">ఈ ప్రొఫైల్ అందుబాటులో లేదు.</p>`;
+                    return;
+                }
 
-            let user = doc.data();
-            let linksHTML = user.links && user.links.length > 0 
-                ? user.links.map(link => `<a href="${link}" target="_blank" class="link-item">🔗 ${link}</a>`).join('')
-                : '<p style="color:#64748b;">No links added</p>';
+                let user = doc.data();
+                let linksHTML = user.links && user.links.length > 0 
+                    ? user.links.map(link => `<a href="${link}" target="_blank" class="link-item">🔗 ${link}</a>`).join('')
+                    : '<p style="color:#64748b;">No links added</p>';
 
-            profileContainer.innerHTML = `
-                <div class="insta-profile-card">
-                    <img src="${user.photo}" class="insta-avatar">
-                    <h2 style="color:#fff; margin-bottom: 5px;">${user.name}</h2>
-                    <div class="insta-code-badge">Code: ${code}</div>
-                    <div style="margin-top: 15px;">
-                        ${linksHTML}
+                profileContainer.innerHTML = `
+                    <div class="insta-profile-card">
+                        <img src="${user.photo}" class="insta-avatar">
+                        <h2 style="color:#fff; margin-bottom: 5px;">${user.name}</h2>
+                        <div class="insta-code-badge">Code: ${code}</div>
+                        <div style="margin-top: 15px;">
+                            ${linksHTML}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } catch (error) {
+                console.error("Profile load error: ", error);
+                profileContainer.innerHTML = `<p style="text-align:center; color:#ef4444;">ప్రొఫైల్ లోడ్ చేయడంలో విఫలమైంది.</p>`;
+            }
+        }
+
+        async function rateApp(stars) {
+            const starsElements = document.querySelectorAll('.star');
+            starsElements.pop = starsElements.forEach((star, index) => {
+                if (index < stars) {
+                    star.classList.add('selected');
+                } else {
+                    star.classList.remove('selected');
+                }
+            });
+
+            document.getElementById('ratingStatus').innerText = `Thank you for rating us ${stars} Stars! ⭐`;
+
+            try {
+                await db.collection("ratings").add({
+                    rating: stars,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (e) {
+                console.log("Rating save error", e);
+            }
         }
     </script>
 </body>
