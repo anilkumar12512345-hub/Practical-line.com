@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Practical Line - Social Hub</title>
     
+    <!-- Firebase App & Firestore CDN Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -137,16 +141,20 @@
             font-size: 0.9rem;
         }
 
-        /* 3D GLOBE SPHERE CONTAINER STYLING */
+        /* 3D EARTH GLOBE SPHERE CONTAINER */
         .globe-container {
             position: relative;
-            width: 250px;
-            height: 250px;
-            margin: 10px auto 25px;
-            perspective: 800px;
+            width: 260px;
+            height: 260px;
+            margin: 15px auto 30px;
+            perspective: 900px;
             display: flex;
             justify-content: center;
             align-items: center;
+            background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(15,23,42,0.8) 70%);
+            border-radius: 50%;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: inset 0 0 25px rgba(56, 189, 248, 0.2), 0 0 20px rgba(2, 132, 199, 0.3);
         }
 
         .globe-sphere {
@@ -154,7 +162,7 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            animation: rotateGlobe 18s linear infinite;
+            animation: rotateGlobe 20s linear infinite;
         }
 
         .globe-sphere:hover {
@@ -165,15 +173,15 @@
             position: absolute;
             left: 50%;
             top: 50%;
-            width: 55px;
-            height: 55px;
-            margin-left: -27.5px;
-            margin-top: -27.5px;
+            width: 50px;
+            height: 50px;
+            margin-left: -25px;
+            margin-top: -25px;
             border-radius: 50%;
             border: 2px solid #38bdf8;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
             cursor: pointer;
-            transition: transform 0.3s ease;
+            background: #0f172a;
         }
 
         .globe-item img {
@@ -185,15 +193,16 @@
 
         .globe-item span {
             position: absolute;
-            bottom: -18px;
+            bottom: -16px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #cbd5e1;
             white-space: nowrap;
-            background: rgba(15, 23, 42, 0.8);
-            padding: 1px 6px;
-            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 1px 5px;
+            border-radius: 6px;
+            border: 1px solid #334155;
         }
 
         @keyframes rotateGlobe {
@@ -335,9 +344,9 @@
                     <button class="btn" style="width: auto; padding: 0 20px;" onclick="searchByCode()">Search</button>
                 </div>
 
-                <!-- 3D GLOBE ROTATING SPHERE -->
+                <!-- 3D EARTH GLOBE ROTATING SPHERE -->
                 <div class="global-section">
-                    <h3>Featured 3D Creators</h3>
+                    <h3>Global Earth 3D Creators</h3>
                     <div class="globe-container">
                         <div class="globe-sphere" id="globeSphere"></div>
                     </div>
@@ -392,16 +401,18 @@
     </div>
 
     <script>
-        let database = JSON.parse(localStorage.getItem('practicalLineDB')) || {
-            "7777": {
-                name: "Anil Kumar",
-                photo: "https://via.placeholder.com/150/0284c7/ffffff?text=Anil",
-                links: ["https://instagram.com", "https://youtube.com"]
-            }
+        // --- REAL FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyKeyForPracticalLineHub-Demo",
+            authDomain: "practical-line.firebaseapp.com",
+            projectId: "practical-line",
+            storageBucket: "practical-line.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123:web:abc"
         };
 
-        let currentActiveUserCode = "7777";
-        let uploadedPhotoData = "https://via.placeholder.com/150/38bdf8/ffffff?text=User";
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -409,8 +420,11 @@
                 splash.style.opacity = '0';
                 setTimeout(() => splash.style.display = 'none', 800);
             }, 2000);
-            renderAppData();
+            loadGlobalUsersFromCloud();
         });
+
+        let currentActiveUserCode = "7777";
+        let uploadedPhotoData = "https://via.placeholder.com/150/38bdf8/ffffff?text=User";
 
         function convertImage(event) {
             const file = event.target.files[0];
@@ -444,7 +458,8 @@
             container.appendChild(newBox);
         }
 
-        function registerUser() {
+        // Register User & Save to Cloud Firestore
+        async function registerUser() {
             const name = document.getElementById('regName').value.trim();
             const linkInputs = document.querySelectorAll('.social-link-input');
             let links = [];
@@ -454,75 +469,94 @@
 
             if(!name) { alert('Dhayachesi mee peru enter cheyandi!'); return; }
 
-            let uniqueCode;
-            do {
-                uniqueCode = Math.floor(1000 + Math.random() * 9000).toString();
-            } while (database[uniqueCode]);
+            let uniqueCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-            database[uniqueCode] = { name, photo: uploadedPhotoData, links };
-            localStorage.setItem('practicalLineDB', JSON.stringify(database));
+            const userData = {
+                code: uniqueCode,
+                name: name,
+                photo: uploadedPhotoData,
+                links: links
+            };
 
-            currentActiveUserCode = uniqueCode;
-            alert(`Abhinandanalu! Mee Unique Code: ${uniqueCode}`);
-            
-            renderAppData();
-            switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
+            try {
+                await db.collection("users").doc(uniqueCode).set(userData);
+                currentActiveUserCode = uniqueCode;
+                alert(`Abhinandanalu! Mee Unique Code: ${uniqueCode}`);
+                
+                loadGlobalUsersFromCloud();
+                switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
+            } catch (error) {
+                console.error("Error writing document: ", error);
+                alert("Error saving data! Try again.");
+            }
         }
 
-        function renderAppData() {
+        // Real-time Cloud Sync for Global List & 3D Earth Globe
+        function loadGlobalUsersFromCloud() {
             const globalContainer = document.getElementById('globalUsersList');
             const globeSphere = document.getElementById('globeSphere');
-            
-            globalContainer.innerHTML = '';
-            globeSphere.innerHTML = '';
 
-            let usersList = [];
-            for (let code in database) {
-                let user = database[code];
-                usersList.push({ code, ...user });
+            db.collection("users").onSnapshot((querySnapshot) => {
+                globalContainer.innerHTML = '';
+                globeSphere.innerHTML = '';
 
-                // Render in All Creators List with Profile Pic
-                globalContainer.innerHTML += `
-                    <div class="user-circle-card" onclick="viewUserDirectly('${code}')">
-                        <img src="${user.photo}" class="profile-thumb" alt="${user.name}">
+                let usersList = [];
+                querySnapshot.forEach((doc) => {
+                    let user = doc.data();
+                    usersList.push(user);
+                    
+                    // Render in All Creators List
+                    globalContainer.innerHTML += `
+                        <div class="user-circle-card" onclick="viewUserDirectly('${user.code}')">
+                            <img src="${user.photo}" class="profile-thumb" alt="${user.name}">
+                            <span>${user.name}</span>
+                        </div>
+                    `;
+                });
+
+                if(usersList.length === 0) {
+                    globalContainer.innerHTML = `<p style="color:#64748b; font-size:0.85rem;">No creators yet.</p>`;
+                    return;
+                }
+
+                // Render 3D Earth Globe Sphere with scattered profiles
+                const total = usersList.length;
+                const radius = 100;
+
+                usersList.forEach((user, idx) => {
+                    const phi = Math.acos(-1 + (2 * idx) / total);
+                    const theta = Math.sqrt(total * Math.PI) * phi;
+
+                    const x = radius * Math.cos(theta) * Math.sin(phi);
+                    const y = radius * Math.sin(theta) * Math.sin(phi);
+                    const z = radius * Math.cos(phi);
+
+                    const item = document.createElement('div');
+                    item.className = 'globe-item';
+                    item.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+                    item.onclick = () => viewUserDirectly(user.code);
+
+                    item.innerHTML = `
+                        <img src="${user.photo}" alt="${user.name}">
                         <span>${user.name}</span>
-                    </div>
-                `;
-            }
-
-            // Render 3D Globe Sphere with Profile Pics
-            const total = usersList.length;
-            const radius = 100;
-
-            usersList.forEach((user, idx) => {
-                const phi = Math.acos(-1 + (2 * idx) / total);
-                const theta = Math.sqrt(total * Math.PI) * phi;
-
-                const x = radius * Math.cos(theta) * Math.sin(phi);
-                const y = radius * Math.sin(theta) * Math.sin(phi);
-                const z = radius * Math.cos(phi);
-
-                const item = document.createElement('div');
-                item.className = 'globe-item';
-                item.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
-                item.onclick = () => viewUserDirectly(user.code);
-
-                item.innerHTML = `
-                    <img src="${user.photo}" alt="${user.name}">
-                    <span>${user.name}</span>
-                `;
-                globeSphere.appendChild(item);
+                    `;
+                    globeSphere.appendChild(item);
+                });
             });
         }
 
-        function searchByCode() {
+        // Search Profile by Code from Cloud
+        async function searchByCode() {
             const inputCode = document.getElementById('searchInput').value.trim();
             if(inputCode.length !== 4) {
                 alert('Sarigga 4-ankela code enter cheyandi!');
                 return;
             }
 
-            if(database[inputCode]) {
+            const docRef = db.collection("users").doc(inputCode);
+            const doc = await docRef.get();
+
+            if (doc.exists) {
                 currentActiveUserCode = inputCode;
                 switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
             } else {
@@ -535,15 +569,19 @@
             switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
         }
 
-        function renderProfileView(code) {
+        // Render Profile View
+        async function renderProfileView(code) {
             const profileContainer = document.getElementById('profileContainer');
-            const user = database[code];
+            
+            const docRef = db.collection("users").doc(code);
+            const doc = await docRef.get();
 
-            if(!user) {
+            if(!doc.exists) {
                 profileContainer.innerHTML = `<p style="text-align:center;">E profile enchukoledhu.</p>`;
                 return;
             }
 
+            let user = doc.data();
             let linksHTML = user.links && user.links.length > 0 
                 ? user.links.map(link => `<a href="${link}" target="_blank" class="link-item">🔗 ${link}</a>`).join('')
                 : '<p style="color:#64748b;">No links added</p>';
