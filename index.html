@@ -195,7 +195,7 @@
             height: 40px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #ef4444; /* Google Map Red border indicator */
+            border: 2px solid #ef4444;
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
             background: #111827;
         }
@@ -205,7 +205,7 @@
             height: 0;
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
-            border-top: 10px solid #ef4444; /* Red map marker tail */
+            border-top: 10px solid #ef4444;
             margin-top: -3px;
             filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
         }
@@ -295,8 +295,12 @@
             margin-bottom: 15px;
         }
 
-        .link-item {
-            display: block;
+        /* SOCIAL MEDIA LINK BUTTONS WITH ICONS */
+        .social-link-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             background: #0f172a;
             padding: 12px;
             margin: 10px 0;
@@ -305,7 +309,11 @@
             text-decoration: none;
             font-weight: bold;
             border: 1px solid #334155;
-            word-break: break-all;
+            transition: background 0.2s;
+        }
+
+        .social-link-btn:hover {
+            background: #1e293b;
         }
 
         /* RATING WIDGET */
@@ -580,7 +588,6 @@
             }
         }
 
-        // Real-time Cloud Sync with Google Maps Style Pins on Rotating Globe
         function loadGlobalUsersFromCloud() {
             const globalContainer = document.getElementById('globalUsersList');
             const globeSphere = document.getElementById('globeSphere');
@@ -664,6 +671,40 @@
             switchPage('profilePage', document.querySelectorAll('.nav-item')[2]);
         }
 
+        // Helper to detect platform and assign correct icon/logo
+        function getSocialLinkHTML(url) {
+            let lowerUrl = url.toLowerCase();
+            let icon = "🌐";
+            let platformName = "Website Link";
+
+            if (lowerUrl.includes('instagram.com')) {
+                icon = "📸";
+                platformName = "Instagram Profile";
+            } else if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+                icon = "▶️";
+                platformName = "YouTube Channel";
+            } else if (lowerUrl.includes('facebook.com')) {
+                icon = "📘";
+                platformName = "Facebook Page";
+            } else if (lowerUrl.includes('whatsapp.com') || lowerUrl.includes('wa.me')) {
+                icon = "💚";
+                platformName = "WhatsApp Contact";
+            } else if (lowerUrl.includes('telegram.me') || lowerUrl.includes('t.me')) {
+                icon = "✈️";
+                platformName = "Telegram Channel";
+            } else if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
+                icon = "🐦";
+                platformName = "X (Twitter)";
+            }
+
+            return `
+                <a href="${url}" target="_blank" class="social-link-btn">
+                    <span style="font-size: 1.2rem;">${icon}</span>
+                    <span>${platformName}</span>
+                </a>
+            `;
+        }
+
         async function renderProfileView(code) {
             const profileContainer = document.getElementById('profileContainer');
             
@@ -678,7 +719,7 @@
 
                 let user = doc.data();
                 let linksHTML = user.links && user.links.length > 0 
-                    ? user.links.map(link => `<a href="${link}" target="_blank" class="link-item">🔗 ${link}</a>`).join('')
+                    ? user.links.map(link => getSocialLinkHTML(link)).join('')
                     : '<p style="color:#64748b;">No links added</p>';
 
                 profileContainer.innerHTML = `
@@ -699,7 +740,7 @@
 
         async function rateApp(stars) {
             const starsElements = document.querySelectorAll('.star');
-            starsElements.pop = starsElements.forEach((star, index) => {
+            starsElements.forEach((star, index) => {
                 if (index < stars) {
                     star.classList.add('selected');
                 } else {
