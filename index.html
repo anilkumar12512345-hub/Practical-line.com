@@ -73,8 +73,8 @@
     </nav>
 
     <!-- Join Modal -->
-    <div id="join-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-800 w-full max-w-md rounded-2xl p-6 relative">
+    <div id="join-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-gray-900 border border-gray-800 w-full max-w-md rounded-2xl p-6 relative my-8">
             <button onclick="closeJoinModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
             <h3 class="text-xl font-bold mb-4 text-blue-400">Join Practical Line</h3>
             <form id="join-form" class="space-y-4">
@@ -82,19 +82,32 @@
                     <label class="block text-xs text-gray-400 mb-1">Your Name</label>
                     <input type="text" id="join-name" required class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                 </div>
+                
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">4-Digit Secret Code</label>
-                    <input type="text" id="join-code" maxlength="4" required class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                    <label class="block text-xs text-gray-400 mb-1">Upload Profile Photo</label>
+                    <input type="file" id="join-img-file" accept="image/*" required class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-white text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500">
                 </div>
+
+                <!-- Dynamic Links Container -->
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">Profile Image URL</label>
-                    <input type="url" id="join-img" required class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs text-gray-400">Social Media Links</label>
+                        <button type="button" onclick="addLinkField()" class="text-xs text-blue-400 hover:text-blue-300 font-semibold">+ Add Link</button>
+                    </div>
+                    <div id="links-container" class="space-y-2">
+                        <div class="flex gap-2">
+                            <select class="link-type bg-gray-800 border border-gray-700 rounded-xl px-2 py-2 text-xs text-white focus:outline-none">
+                                <option value="instagram">Instagram</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="website">Website</option>
+                            </select>
+                            <input type="url" placeholder="https://..." class="link-url flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Instagram Link</label>
-                    <input type="url" id="join-insta" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition">Submit & Join</button>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition mt-2">Submit & Join</button>
             </form>
         </div>
     </div>
@@ -102,9 +115,8 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addset, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase Config (Nee config keys ikkade unnaay)
         const firebaseConfig = {
             apiKey: "AIzaSyD...",
             authDomain: "practical-line.firebaseapp.com",
@@ -117,10 +129,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Global Variables
         window.allMembers = [];
 
-        // Fetch Data from Firestore
         async function loadMembers() {
             try {
                 const querySnapshot = await getDocs(collection(db, "users"));
@@ -128,11 +138,7 @@
                 querySnapshot.forEach((doc) => {
                     window.allMembers.push({ id: doc.id, ...doc.data() });
                 });
-
-                // Update UI Count
                 document.getElementById('live-count').innerText = window.allMembers.length;
-
-                // Render List
                 renderMembersList(window.allMembers);
             } catch (e) {
                 console.error("Error loading members: ", e);
@@ -147,40 +153,82 @@
                 return;
             }
             members.forEach(m => {
+                let linksHtml = '';
+                if (m.links && Array.isArray(m.links)) {
+                    m.links.forEach(l => {
+                        let icon = 'fa-globe text-gray-400';
+                        if(l.type === 'instagram') icon = 'fa-brands fa-instagram text-pink-500';
+                        if(l.type === 'youtube') icon = 'fa-brands fa-youtube text-red-500';
+                        if(l.type === 'facebook') icon = 'fa-brands fa-facebook text-blue-500';
+                        if(l.type === 'website') icon = 'fa-solid fa-globe text-green-400';
+                        
+                        linksHtml += `<a href="${l.url}" target="_blank" class="text-lg hover:scale-110 transition"><i class="${icon}"></i></a>`;
+                    });
+                }
                 listContainer.innerHTML += `
                     <div class="bg-gray-900 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <img src="${m.img || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover border border-blue-500">
                             <div>
                                 <h4 class="font-semibold text-sm text-white">${m.name}</h4>
-                                <span class="text-xs text-gray-400">Code: ${m.code || 'N/A'}</span>
+                                <span class="text-xs text-gray-400">Code: <strong class="text-blue-400">${m.code}</strong></span>
                             </div>
                         </div>
-                        ${m.insta ? `<a href="${m.insta}" target="_blank" class="text-pink-500 hover:text-pink-400 text-lg"><i class="fa-brands fa-instagram"></i></a>` : ''}
+                        <div class="flex items-center gap-3">
+                            ${linksHtml}
+                        </div>
                     </div>
                 `;
             });
         }
 
-        // Form Submit
+        window.addLinkField = function() {
+            const container = document.getElementById('links-container');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 mt-2';
+            div.innerHTML = `
+                <select class="link-type bg-gray-800 border border-gray-700 rounded-xl px-2 py-2 text-xs text-white focus:outline-none">
+                    <option value="instagram">Instagram</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="website">Website</option>
+                </select>
+                <input type="url" placeholder="https://..." class="link-url flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 px-2"><i class="fa-solid fa-trash"></i></button>
+            `;
+            container.appendChild(div);
+        }
+
         document.getElementById('join-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('join-name').value;
-            const code = document.getElementById('join-code').value;
-            const img = document.getElementById('join-img').value;
-            const insta = document.getElementById('join-insta').value;
+            const fileInput = document.getElementById('join-img-file');
+            
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-            try {
-                await setDoc(doc(db, "users", code), { name, code, img, insta });
-                alert("Successfully Joined!");
-                closeJoinModal();
-                loadMembers();
-            } catch (err) {
-                alert("Error joining: " + err.message);
-            }
+            const linkElements = document.querySelectorAll('#links-container > div');
+            let links = [];
+            linkElements.forEach(el => {
+                const type = el.querySelector('.link-type').value;
+                const url = el.querySelector('.link-url').value;
+                if(url) links.push({ type, url });
+            });
+
+            const reader = new FileReader();
+            reader.readAsDataURL(fileInput.files[0]);
+            reader.onload = async function () {
+                const img = reader.result;
+                try {
+                    await setDoc(doc(db, "users", code), { name, code, img, links });
+                    alert(`Successfully Joined! Your Secret Code is: ${code}`);
+                    closeJoinModal();
+                    loadMembers();
+                } catch (err) {
+                    alert("Error joining: " + err.message);
+                }
+            };
         });
 
-        // Load on startup
         loadMembers();
     </script>
 
@@ -197,7 +245,6 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
 
-        // Globe Mesh
         const geometry = new THREE.SphereGeometry(2, 32, 32);
         const material = new THREE.MeshBasicMaterial({ color: 0x1e3a8a, wireframe: true, transparent: true, opacity: 0.3 });
         const globe = new THREE.Mesh(geometry, material);
@@ -213,10 +260,10 @@
         }
         animate();
 
-        // Modal Functions
         window.openJoinModal = function() { document.getElementById('join-modal').classList.remove('hidden'); }
         window.closeJoinModal = function() { document.getElementById('join-modal').classList.add('hidden'); }
         window.switchTab = function(tab) { alert("Switched to " + tab); }
     </script>
 </body>
 </html>
+
