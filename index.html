@@ -90,31 +90,31 @@
 
                 <!-- Social Media Links Inputs -->
                 <div class="space-y-2">
-                    <label class="block text-xs text-gray-400 mb-1">Social Media Links</label>
+                    <label class="block text-xs text-gray-400 mb-1">Social Media Links (Optional)</label>
                     
                     <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
                         <i class="fa-brands fa-instagram text-pink-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="link-instagram" placeholder="Instagram Profile URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
+                        <input type="url" id="link-instagram" placeholder="Instagram URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
                     </div>
 
                     <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
                         <i class="fa-brands fa-youtube text-red-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="link-youtube" placeholder="YouTube Channel URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
+                        <input type="url" id="link-youtube" placeholder="YouTube URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
                     </div>
 
                     <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
                         <i class="fa-brands fa-facebook text-blue-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="link-facebook" placeholder="Facebook Profile URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
+                        <input type="url" id="link-facebook" placeholder="Facebook URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
                     </div>
 
                     <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
                         <i class="fa-solid fa-video text-amber-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="link-moj" placeholder="Moj Profile URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
+                        <input type="url" id="link-moj" placeholder="Moj URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
                     </div>
 
                     <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
                         <i class="fa-brands fa-twitter text-sky-400 text-lg w-6 text-center"></i>
-                        <input type="url" id="link-twitter" placeholder="Twitter / X Profile URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
+                        <input type="url" id="link-twitter" placeholder="Twitter / X URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
                     </div>
 
                     <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
@@ -123,7 +123,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition mt-2">Submit & Join</button>
+                <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition mt-2">Submit & Join</button>
             </form>
         </div>
     </div>
@@ -202,18 +202,21 @@
 
         document.getElementById('join-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.innerText = "Submitting...";
+            submitBtn.disabled = true;
+
             const name = document.getElementById('join-name').value;
             const fileInput = document.getElementById('join-img-file');
             
             const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-            // Collect all platform links safely
             const platforms = ['instagram', 'youtube', 'facebook', 'moj', 'twitter', 'website'];
             let links = [];
             platforms.forEach(p => {
-                const urlVal = document.getElementById(`link-${p}`).value.trim();
-                if(urlVal) {
-                    links.push({ type: p, url: urlVal });
+                const inputEl = document.getElementById(`link-${p}`);
+                if(inputEl && inputEl.value.trim()) {
+                    links.push({ type: p, url: inputEl.value.trim() });
                 }
             });
 
@@ -226,11 +229,18 @@
                         await setDoc(doc(db, "users", code), { name, code, img, links });
                         alert(`Successfully Joined! Your Secret Code is: ${code}`);
                         closeJoinModal();
+                        document.getElementById('join-form').reset();
                         loadMembers();
                     } catch (err) {
                         alert("Error joining: " + err.message);
+                    } finally {
+                        submitBtn.innerText = "Submit & Join";
+                        submitBtn.disabled = false;
                     }
                 };
+            } else {
+                submitBtn.innerText = "Submit & Join";
+                submitBtn.disabled = false;
             }
         });
 
