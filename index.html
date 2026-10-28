@@ -235,65 +235,52 @@
             });
         }
 
-        // Join Form Submit
+        // Join Form Submit with bulletproof Promise handling
         document.getElementById('join-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.innerText = "Submitting...";
             submitBtn.disabled = true;
 
-            const name = document.getElementById('join-name').value;
-            const fileInput = document.getElementById('join-img-file');
-            const code = Math.floor(1000 + Math.random() * 9000).toString();
+            try {
+                const name = document.getElementById('join-name').value.trim();
+                const fileInput = document.getElementById('join-img-file');
+                const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-            const platforms = ['instagram', 'youtube', 'facebook', 'moj', 'twitter', 'website'];
-            let links = [];
-            platforms.forEach(p => {
-                const inputEl = document.getElementById(`link-${p}`);
-                if(inputEl && inputEl.value.trim()) {
-                    links.push({ type: p, url: inputEl.value.trim() });
+                if (!fileInput.files || !fileInput.files[0]) {
+                    alert("Please select a profile photo!");
+                    return;
                 }
-            });
 
-            if(fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.readAsDataURL(fileInput.files[0]);
-                reader.onload = async function () {
-                    const imgElement = new Image();
-                    imgElement.src = reader.result;
-                    imgElement.onload = async function() {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 200;
-                        const MAX_HEIGHT = 200;
-                        let width = imgElement.width;
-                        let height = imgElement.height;
+                const platforms = ['instagram', 'youtube', 'facebook', 'moj', 'twitter', 'website'];
+                let links = [];
+                platforms.forEach(p => {
+                    const inputEl = document.getElementById(`link-${p}`);
+                    if(inputEl && inputEl.value.trim()) {
+                        links.push({ type: p, url: inputEl.value.trim() });
+                    }
+                });
 
-                        if (width > height) {
-                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                        } else {
-                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                        }
+                // Read file cleanly using Promise
+                const file = fileInput.files[0];
+                const base64Img = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
 
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(imgElement, 0, 0, width, height);
-                        const compressedImg = canvas.toDataURL('image/jpeg', 0.7);
+                await setDoc(doc(db, "users", code), { name, code, img: base64Img, links });
+                alert(`Successfully Joined! Your Secret Code is: ${code}`);
+                closeJoinModal();
+                document.getElementById('join-form').reset();
+                loadMembers();
 
-                        try {
-                            await setDoc(doc(db, "users", code), { name, code, img: compressedImg, links });
-                            alert(`Successfully Joined! Your Secret Code is: ${code}`);
-                            closeJoinModal();
-                            document.getElementById('join-form').reset();
-                            loadMembers();
-                        } catch (err) {
-                            alert("Error joining: " + err.message);
-                        } finally {
-                            submitBtn.innerText = "Submit & Join";
-                            submitBtn.disabled = false;
-                        }
-                    };
-                };
+            } catch (err) {
+                alert("Error joining: " + err.message);
+            } finally {
+                submitBtn.innerText = "Submit & Join";
+                submitBtn.disabled = false;
             }
         });
 
@@ -317,8 +304,6 @@
 
                 if (!docSnap.exists()) {
                     alert("Profile not found with this code!");
-                    updateBtn.innerText = "Update Links";
-                    updateBtn.disabled = false;
                     return;
                 }
 
@@ -330,7 +315,6 @@
                     const inputEl = document.getElementById(`up-${p}`);
                     if(inputEl && inputEl.value.trim()) {
                         let newUrl = inputEl.value.trim();
-                        // Check if this type already exists, update or add new
                         let found = existingLinks.find(l => l.type === p);
                         if(found) {
                             found.url = newUrl;
