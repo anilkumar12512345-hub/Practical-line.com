@@ -168,13 +168,15 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // నీ అసలైన Firebase Config ఇక్కడ సెట్ చేయబడింది
         const firebaseConfig = {
-            apiKey: "AIzaSyD...",
-            authDomain: "practical-line.firebaseapp.com",
-            projectId: "practical-line",
-            storageBucket: "practical-line.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcde"
+          apiKey: "AIzaSyDe0CXHpSv5q9xmjJroSe8B7BVCdQA6wfM",
+          authDomain: "practical-line-683de.firebaseapp.com",
+          projectId: "practical-line-683de",
+          storageBucket: "practical-line-683de.firebasestorage.app",
+          messagingSenderId: "11132140502",
+          appId: "1:11132140502:web:531aeedc2ff0600a908277",
+          measurementId: "G-BDYQN35K2T"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -235,7 +237,7 @@
             });
         }
 
-        // Join Form Submit with bulletproof Promise handling
+        // Join Form Submit with image compression
         document.getElementById('join-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
@@ -249,6 +251,8 @@
 
                 if (!fileInput.files || !fileInput.files[0]) {
                     alert("Please select a profile photo!");
+                    submitBtn.innerText = "Submit & Join";
+                    submitBtn.disabled = false;
                     return;
                 }
 
@@ -261,24 +265,51 @@
                     }
                 });
 
-                // Read file cleanly using Promise
+                // Read and compress image via Canvas
                 const file = fileInput.files[0];
-                const base64Img = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
+                const reader = new FileReader();
+                
+                reader.onload = function (event) {
+                    const imgElement = new Image();
+                    imgElement.src = event.target.result;
+                    
+                    imgElement.onload = async function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 250;
+                        const MAX_HEIGHT = 250;
+                        let width = imgElement.width;
+                        let height = imgElement.height;
 
-                await setDoc(doc(db, "users", code), { name, code, img: base64Img, links });
-                alert(`Successfully Joined! Your Secret Code is: ${code}`);
-                closeJoinModal();
-                document.getElementById('join-form').reset();
-                loadMembers();
+                        if (width > height) {
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else {
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(imgElement, 0, 0, width, height);
+                        const compressedImg = canvas.toDataURL('image/jpeg', 0.7);
+
+                        try {
+                            await setDoc(doc(db, "users", code), { name, code, img: compressedImg, links });
+                            alert(`Successfully Joined! Your Secret Code is: ${code}`);
+                            closeJoinModal();
+                            document.getElementById('join-form').reset();
+                            loadMembers();
+                        } catch (err) {
+                            alert("Error saving to Firestore: " + err.message);
+                        } finally {
+                            submitBtn.innerText = "Submit & Join";
+                            submitBtn.disabled = false;
+                        }
+                    };
+                };
+                reader.readAsDataURL(file);
 
             } catch (err) {
                 alert("Error joining: " + err.message);
-            } finally {
                 submitBtn.innerText = "Submit & Join";
                 submitBtn.disabled = false;
             }
@@ -304,6 +335,8 @@
 
                 if (!docSnap.exists()) {
                     alert("Profile not found with this code!");
+                    updateBtn.innerText = "Update Links";
+                    updateBtn.disabled = false;
                     return;
                 }
 
