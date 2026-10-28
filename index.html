@@ -6,8 +6,8 @@
     <title>Practical Line</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FontAwesome Icons Fix -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Three.js for Globe -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -71,6 +71,38 @@
             <span class="text-xs mt-1">Edit Links</span>
         </button>
     </nav>
+
+    <!-- Success / Code Display Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-blue-500/50 w-full max-w-sm rounded-2xl p-6 text-center glow-effect relative">
+            <div class="text-4xl mb-2">🎉</div>
+            <h3 class="text-xl font-bold text-blue-400 mb-1">Congratulations!</h3>
+            <p class="text-xs text-gray-300 mb-4">You have successfully joined Practical Line.</p>
+            
+            <div class="bg-gray-800 border border-gray-700 py-3 px-4 rounded-xl mb-4">
+                <span class="text-xs text-gray-400 block mb-1">YOUR SECRET CODE</span>
+                <span id="display-code" class="text-4xl font-extrabold text-amber-400 tracking-widest">0000</span>
+            </div>
+
+            <p class="text-xs text-gray-400 mb-4">Save this code to edit your links or search your profile later!</p>
+            <button onclick="closeSuccessModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl font-semibold transition">Got It!</button>
+        </div>
+    </div>
+
+    <!-- Search Profile Result Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 w-full max-w-sm rounded-2xl p-6 text-center relative">
+            <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <img id="pop-img" src="" class="w-20 h-20 rounded-full mx-auto object-cover border-2 border-blue-500 mb-3">
+            <h3 id="pop-name" class="text-lg font-bold text-white mb-1">Name</h3>
+            <p class="text-xs text-gray-400 mb-4">Code: <span id="pop-code" class="text-blue-400 font-bold"></span></p>
+            
+            <div class="text-xs text-gray-400 mb-2 font-semibold">SOCIAL LINKS:</div>
+            <div id="pop-links" class="flex justify-center gap-4 text-2xl py-2 bg-gray-800/50 rounded-xl border border-gray-800">
+                <!-- Links rendered here -->
+            </div>
+        </div>
+    </div>
 
     <!-- Join Modal -->
     <div id="join-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -168,7 +200,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // నీ అసలైన Firebase Config ఇక్కడ సెట్ చేయబడింది
         const firebaseConfig = {
           apiKey: "AIzaSyDe0CXHpSv5q9xmjJroSe8B7BVCdQA6wfM",
           authDomain: "practical-line-683de.firebaseapp.com",
@@ -198,6 +229,16 @@
             }
         }
 
+        function getIconClass(type) {
+            if(type === 'instagram') return 'fa-brands fa-instagram text-pink-500';
+            if(type === 'youtube') return 'fa-brands fa-youtube text-red-500';
+            if(type === 'facebook') return 'fa-brands fa-facebook text-blue-500';
+            if(type === 'moj') return 'fa-solid fa-video text-amber-500';
+            if(type === 'twitter') return 'fa-brands fa-twitter text-sky-400';
+            if(type === 'website') return 'fa-solid fa-globe text-green-400';
+            return 'fa-solid fa-globe text-gray-400';
+        }
+
         function renderMembersList(members) {
             const listContainer = document.getElementById('members-list');
             listContainer.innerHTML = '';
@@ -207,19 +248,15 @@
             }
             members.forEach(m => {
                 let linksHtml = '';
-                if (m.links && Array.isArray(m.links)) {
+                if (m.links && Array.isArray(m.links) && m.links.length > 0) {
                     m.links.forEach(l => {
-                        let icon = 'fa-globe text-gray-400';
-                        if(l.type === 'instagram') icon = 'fa-brands fa-instagram text-pink-500';
-                        if(l.type === 'youtube') icon = 'fa-brands fa-youtube text-red-500';
-                        if(l.type === 'facebook') icon = 'fa-brands fa-facebook text-blue-500';
-                        if(l.type === 'moj') icon = 'fa-solid fa-video text-amber-500';
-                        if(l.type === 'twitter') icon = 'fa-brands fa-twitter text-sky-400';
-                        if(l.type === 'website') icon = 'fa-solid fa-globe text-green-400';
-                        
-                        linksHtml += `<a href="${l.url}" target="_blank" class="text-lg hover:scale-110 transition"><i class="${icon}"></i></a>`;
+                        let icon = getIconClass(l.type);
+                        linksHtml += `<a href="${l.url}" target="_blank" class="hover:scale-125 transition"><i class="${icon}"></i></a>`;
                     });
+                } else {
+                    linksHtml = `<span class="text-xs text-gray-500">No links</span>`;
                 }
+
                 listContainer.innerHTML += `
                     <div class="bg-gray-900 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -229,7 +266,7 @@
                                 <span class="text-xs text-gray-400">Code: <strong class="text-blue-400">${m.code}</strong></span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 text-lg">
                             ${linksHtml}
                         </div>
                     </div>
@@ -237,7 +274,7 @@
             });
         }
 
-        // Join Form Submit with image compression
+        // Join Form Submit
         document.getElementById('join-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
@@ -265,7 +302,6 @@
                     }
                 });
 
-                // Read and compress image via Canvas
                 const file = fileInput.files[0];
                 const reader = new FileReader();
                 
@@ -294,9 +330,12 @@
 
                         try {
                             await setDoc(doc(db, "users", code), { name, code, img: compressedImg, links });
-                            alert(`Successfully Joined! Your Secret Code is: ${code}`);
                             closeJoinModal();
                             document.getElementById('join-form').reset();
+                            
+                            // Show custom celebration modal
+                            document.getElementById('display-code').innerText = code;
+                            document.getElementById('success-modal').classList.remove('hidden');
                             loadMembers();
                         } catch (err) {
                             alert("Error saving to Firestore: " + err.message);
@@ -375,7 +414,21 @@
             if(!code) return;
             const found = window.allMembers.find(m => m.code === code);
             if(found) {
-                alert(`Found Profile: ${found.name} (Code: ${found.code})`);
+                document.getElementById('pop-img').src = found.img || 'https://via.placeholder.com/80';
+                document.getElementById('pop-name').innerText = found.name;
+                document.getElementById('pop-code').innerText = found.code;
+                
+                let linksHtml = '';
+                if (found.links && Array.isArray(found.links) && found.links.length > 0) {
+                    found.links.forEach(l => {
+                        let icon = getIconClass(l.type);
+                        linksHtml += `<a href="${l.url}" target="_blank" class="hover:scale-125 transition"><i class="${icon}"></i></a>`;
+                    });
+                } else {
+                    linksHtml = `<span class="text-xs text-gray-400">No social links added</span>`;
+                }
+                document.getElementById('pop-links').innerHTML = linksHtml;
+                document.getElementById('profile-modal').classList.remove('hidden');
             } else {
                 alert("Member not found with this code.");
             }
@@ -384,7 +437,7 @@
         loadMembers();
     </script>
 
-    <!-- Three.js Globe Script -->
+    <!-- Three.js Globe Script & Modal Functions -->
     <script>
         const container = document.getElementById('globe-container');
         const scene = new THREE.Scene();
@@ -416,6 +469,8 @@
         window.closeJoinModal = function() { document.getElementById('join-modal').classList.add('hidden'); }
         window.openUpdateModal = function() { document.getElementById('update-modal').classList.remove('hidden'); }
         window.closeUpdateModal = function() { document.getElementById('update-modal').classList.add('hidden'); }
+        window.closeSuccessModal = function() { document.getElementById('success-modal').classList.add('hidden'); }
+        window.closeProfileModal = function() { document.getElementById('profile-modal').classList.add('hidden'); }
         window.switchTab = function(tab) { alert("Switched to " + tab); }
     </script>
 </body>
