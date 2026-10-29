@@ -6,7 +6,7 @@
     <title>Practical Line</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons Fix -->
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Three.js for Globe -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -14,6 +14,9 @@
     <style>
         body { background-color: #030712; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
         .glow-effect { box-shadow: 0 0 25px rgba(59, 130, 246, 0.3); }
+        #globe-pins-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+        .creator-map-pin { position: absolute; pointer-events: auto; transform: translate(-50%, -50%); transition: transform 0.2s; }
+        .creator-map-pin:hover { transform: translate(-50%, -50%) scale(1.3); z-index: 50; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between pb-20">
@@ -37,19 +40,20 @@
             <button id="search-btn" onclick="searchProfile()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold transition">Search</button>
         </div>
 
-        <!-- 3D Globe Container -->
+        <!-- 3D Globe Container with Pinned Creator Profile Pictures -->
         <div class="w-full max-w-lg h-[350px] relative rounded-2xl overflow-hidden border border-gray-800 glow-effect bg-black">
             <div id="globe-container" class="w-full h-full"></div>
-            <div class="absolute bottom-3 left-3 bg-black/60 backdrop-blur px-3 py-1 rounded-lg text-xs text-gray-300 border border-gray-800">
-                <i class="fa-solid fa-location-dot text-red-500"></i> Live Google Map Earth Pins
+            <div id="globe-pins-overlay"></div>
+            <div class="absolute bottom-3 left-3 bg-black/70 backdrop-blur px-3 py-1 rounded-lg text-xs text-gray-300 border border-gray-800 z-10">
+                <i class="fa-solid fa-location-dot text-red-500"></i> Tap Globe Avatars to View Links
             </div>
         </div>
 
-        <!-- Global Creators / Members List -->
+        <!-- Global Creators List with Profile Pics & Names -->
         <div class="w-full max-w-md mt-6">
             <h2 class="text-lg font-bold mb-3 text-gray-200">All Global Creators</h2>
-            <div id="members-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
-                <!-- Dynamic members list will load here -->
+            <div id="members-list" class="space-y-3 max-h-56 overflow-y-auto pr-1">
+                <!-- Dynamic members list -->
             </div>
         </div>
     </main>
@@ -84,12 +88,12 @@
                 <span id="display-code" class="text-4xl font-extrabold text-amber-400 tracking-widest">0000</span>
             </div>
 
-            <p class="text-xs text-gray-400 mb-4">Save this code to edit your links or search your profile later!</p>
+            <p class="text-xs text-gray-400 mb-4">Save this code to edit your links later!</p>
             <button onclick="closeSuccessModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl font-semibold transition">Got It!</button>
         </div>
     </div>
 
-    <!-- Search Profile Result Modal -->
+    <!-- Profile Links Popup Modal -->
     <div id="profile-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-gray-900 border border-gray-800 w-full max-w-sm rounded-2xl p-6 text-center relative">
             <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
@@ -98,7 +102,7 @@
             <p class="text-xs text-gray-400 mb-4">Code: <span id="pop-code" class="text-blue-400 font-bold"></span></p>
             
             <div class="text-xs text-gray-400 mb-2 font-semibold">SOCIAL LINKS:</div>
-            <div id="pop-links" class="flex justify-center gap-4 text-2xl py-2 bg-gray-800/50 rounded-xl border border-gray-800">
+            <div id="pop-links" class="flex justify-center gap-4 text-2xl py-3 bg-gray-800/50 rounded-xl border border-gray-800">
                 <!-- Links rendered here -->
             </div>
         </div>
@@ -153,49 +157,30 @@
         </div>
     </div>
 
-    <!-- Update / Edit Links Modal -->
+    <!-- Update / Edit Links Modal with Un-added Links Filtering -->
     <div id="update-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-gray-900 border border-gray-800 w-full max-w-md rounded-2xl p-6 relative my-8">
             <button onclick="closeUpdateModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
-            <h3 class="text-xl font-bold mb-4 text-blue-400">Add / Update Your Links</h3>
-            <form id="update-form" class="space-y-4">
+            <h3 class="text-xl font-bold mb-4 text-blue-400">Add New Links</h3>
+            
+            <div id="code-check-section" class="space-y-4">
                 <div>
                     <label class="block text-xs text-gray-400 mb-1">Enter Your 4-Digit Code</label>
-                    <input type="text" id="update-code" maxlength="4" required class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                    <input type="text" id="update-code" maxlength="4" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                 </div>
-                <div class="space-y-2">
-                    <label class="block text-xs text-gray-400 mb-1">New or Additional Social Links</label>
-                    <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
-                        <i class="fa-brands fa-instagram text-pink-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="up-instagram" placeholder="Instagram URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
-                    </div>
-                    <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
-                        <i class="fa-brands fa-youtube text-red-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="up-youtube" placeholder="YouTube URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
-                    </div>
-                    <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
-                        <i class="fa-brands fa-facebook text-blue-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="up-facebook" placeholder="Facebook URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
-                    </div>
-                    <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
-                        <i class="fa-solid fa-video text-amber-500 text-lg w-6 text-center"></i>
-                        <input type="url" id="up-moj" placeholder="Moj URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
-                    </div>
-                    <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
-                        <i class="fa-brands fa-twitter text-sky-400 text-lg w-6 text-center"></i>
-                        <input type="url" id="up-twitter" placeholder="Twitter / X URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
-                    </div>
-                    <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
-                        <i class="fa-solid fa-globe text-green-400 text-lg w-6 text-center"></i>
-                        <input type="url" id="up-website" placeholder="Website URL" class="w-full bg-transparent text-sm text-white focus:outline-none">
-                    </div>
+                <button type="button" onclick="verifyCodeForUpdate()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition">Next / Verify Code</button>
+            </div>
+
+            <form id="update-form" class="space-y-4 hidden mt-4">
+                <div id="unadded-links-container" class="space-y-2">
+                    <!-- Only un-added link inputs will load here -->
                 </div>
-                <button type="submit" id="update-btn" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold transition mt-2">Update Links</button>
+                <button type="submit" id="update-btn" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold transition mt-2">Add New Links</button>
             </form>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs & App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -214,14 +199,24 @@
         const db = getFirestore(app);
 
         window.allMembers = [];
+        let globePinsData = [];
+        let currentEditingCode = null;
 
         async function loadMembers() {
             try {
                 const querySnapshot = await getDocs(collection(db, "users"));
                 window.allMembers = [];
-                querySnapshot.forEach((doc) => {
-                    window.allMembers.push({ id: doc.id, ...doc.data() });
+                globePinsData = [];
+                
+                querySnapshot.forEach((doc, idx) => {
+                    const data = { id: doc.id, ...doc.data() };
+                    window.allMembers.push(data);
+                    
+                    const phi = Math.acos(-1 + (2 * (idx + 0.5)) / Math.max(querySnapshot.size, 1));
+                    const theta = Math.sqrt(querySnapshot.size * Math.PI) * phi;
+                    globePinsData.push({ member: data, phi, theta });
                 });
+
                 document.getElementById('live-count').innerText = window.allMembers.length;
                 renderMembersList(window.allMembers);
             } catch (e) {
@@ -239,38 +234,29 @@
             return 'fa-solid fa-globe text-gray-400';
         }
 
+        // Render global list with profile pic, name and code (Clicking opens their profile modal)
         function renderMembersList(members) {
             const listContainer = document.getElementById('members-list');
             listContainer.innerHTML = '';
             if (members.length === 0) {
-                listContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No members joined yet.</p>';
+                listContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-2">No members joined yet.</p>';
                 return;
             }
             members.forEach(m => {
-                let linksHtml = '';
-                if (m.links && Array.isArray(m.links) && m.links.length > 0) {
-                    m.links.forEach(l => {
-                        let icon = getIconClass(l.type);
-                        linksHtml += `<a href="${l.url}" target="_blank" class="hover:scale-125 transition"><i class="${icon}"></i></a>`;
-                    });
-                } else {
-                    linksHtml = `<span class="text-xs text-gray-500">No links</span>`;
-                }
-
-                listContainer.innerHTML += `
-                    <div class="bg-gray-900 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <img src="${m.img || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover border border-blue-500">
-                            <div>
-                                <h4 class="font-semibold text-sm text-white">${m.name}</h4>
-                                <span class="text-xs text-gray-400">Code: <strong class="text-blue-400">${m.code}</strong></span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 text-lg">
-                            ${linksHtml}
+                const item = document.createElement('div');
+                item.className = "bg-gray-900 border border-gray-800 px-4 py-2.5 rounded-xl flex items-center justify-between cursor-pointer hover:border-blue-500 transition";
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${m.img || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover border border-blue-500">
+                        <div>
+                            <h4 class="font-semibold text-sm text-white">${m.name}</h4>
+                            <span class="text-xs text-gray-400">Code: <strong class="text-blue-400">${m.code}</strong></span>
                         </div>
                     </div>
+                    <span class="text-xs text-blue-400 bg-blue-950/40 px-2.5 py-1 rounded-lg border border-blue-800/50">View Links</span>
                 `;
+                item.onclick = () => showProfileModal(m);
+                listContainer.appendChild(item);
             });
         }
 
@@ -311,8 +297,8 @@
                     
                     imgElement.onload = async function() {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 250;
-                        const MAX_HEIGHT = 250;
+                        const MAX_WIDTH = 150;
+                        const MAX_HEIGHT = 150;
                         let width = imgElement.width;
                         let height = imgElement.height;
 
@@ -333,7 +319,6 @@
                             closeJoinModal();
                             document.getElementById('join-form').reset();
                             
-                            // Show custom celebration modal
                             document.getElementById('display-code').innerText = code;
                             document.getElementById('success-modal').classList.remove('hidden');
                             loadMembers();
@@ -354,19 +339,13 @@
             }
         });
 
-        // Update Links Form Submit
-        document.getElementById('update-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const updateBtn = document.getElementById('update-btn');
+        // Verify Code and show only un-added links for update
+        window.verifyCodeForUpdate = async function() {
             const code = document.getElementById('update-code').value.trim();
-
             if(!code) {
                 alert("Please enter your 4-digit code!");
                 return;
             }
-
-            updateBtn.innerText = "Updating...";
-            updateBtn.disabled = true;
 
             try {
                 const docRef = doc(db, "users", code);
@@ -374,11 +353,63 @@
 
                 if (!docSnap.exists()) {
                     alert("Profile not found with this code!");
-                    updateBtn.innerText = "Update Links";
-                    updateBtn.disabled = false;
                     return;
                 }
 
+                currentEditingCode = code;
+                const userData = docSnap.data();
+                const existingLinks = userData.links || [];
+                const existingTypes = existingLinks.map(l => l.type);
+
+                const allPlatforms = [
+                    { id: 'instagram', name: 'Instagram URL', icon: 'fa-brands fa-instagram text-pink-500' },
+                    { id: 'youtube', name: 'YouTube URL', icon: 'fa-brands fa-youtube text-red-500' },
+                    { id: 'facebook', name: 'Facebook URL', icon: 'fa-brands fa-facebook text-blue-500' },
+                    { id: 'moj', name: 'Moj URL', icon: 'fa-solid fa-video text-amber-500' },
+                    { id: 'twitter', name: 'Twitter / X URL', icon: 'fa-brands fa-twitter text-sky-400' },
+                    { id: 'website', name: 'Website URL', icon: 'fa-solid fa-globe text-green-400' }
+                ];
+
+                const container = document.getElementById('unadded-links-container');
+                container.innerHTML = '';
+
+                let unaddedCount = 0;
+                allPlatforms.forEach(p => {
+                    if(!existingTypes.includes(p.id)) {
+                        unaddedCount++;
+                        container.innerHTML += `
+                            <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
+                                <i class="${p.icon} text-lg w-6 text-center"></i>
+                                <input type="url" id="up-${p.id}" placeholder="${p.name}" class="w-full bg-transparent text-sm text-white focus:outline-none">
+                            </div>
+                        `;
+                    }
+                });
+
+                if(unaddedCount === 0) {
+                    container.innerHTML = `<p class="text-amber-400 text-xs text-center py-2">You have already added all available social links!</p>`;
+                }
+
+                document.getElementById('code-check-section').classList.add('hidden');
+                document.getElementById('update-form').classList.remove('hidden');
+
+            } catch(err) {
+                alert("Error checking code: " + err.message);
+            }
+        }
+
+        // Update Links Form Submit
+        document.getElementById('update-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentEditingCode) return;
+
+            const updateBtn = document.getElementById('update-btn');
+            updateBtn.innerText = "Adding Links...";
+            updateBtn.disabled = true;
+
+            try {
+                const docRef = doc(db, "users", currentEditingCode);
+                const docSnap = await getDoc(docRef);
                 let userData = docSnap.data();
                 let existingLinks = userData.links || [];
 
@@ -386,60 +417,56 @@
                 platforms.forEach(p => {
                     const inputEl = document.getElementById(`up-${p}`);
                     if(inputEl && inputEl.value.trim()) {
-                        let newUrl = inputEl.value.trim();
-                        let found = existingLinks.find(l => l.type === p);
-                        if(found) {
-                            found.url = newUrl;
-                        } else {
-                            existingLinks.push({ type: p, url: newUrl });
-                        }
+                        existingLinks.push({ type: p, url: inputEl.value.trim() });
                     }
                 });
 
                 await setDoc(docRef, { ...userData, links: existingLinks });
-                alert("Links updated successfully!");
+                alert("New links added successfully!");
                 closeUpdateModal();
-                document.getElementById('update-form').reset();
                 loadMembers();
             } catch (err) {
                 alert("Error updating: " + err.message);
             } finally {
-                updateBtn.innerText = "Update Links";
+                updateBtn.innerText = "Add New Links";
                 updateBtn.disabled = false;
             }
         });
+
+        window.showProfileModal = function(m) {
+            document.getElementById('pop-img').src = m.img || 'https://via.placeholder.com/80';
+            document.getElementById('pop-name').innerText = m.name;
+            document.getElementById('pop-code').innerText = m.code;
+            
+            let linksHtml = '';
+            if (m.links && Array.isArray(m.links) && m.links.length > 0) {
+                m.links.forEach(l => {
+                    let icon = getIconClass(l.type);
+                    linksHtml += `<a href="${l.url}" target="_blank" class="hover:scale-125 transition"><i class="${icon}"></i></a>`;
+                });
+            } else {
+                linksHtml = `<span class="text-xs text-gray-400">No social links added</span>`;
+            }
+            document.getElementById('pop-links').innerHTML = linksHtml;
+            document.getElementById('profile-modal').classList.remove('hidden');
+        }
 
         window.searchProfile = function() {
             const code = document.getElementById('search-input').value.trim();
             if(!code) return;
             const found = window.allMembers.find(m => m.code === code);
             if(found) {
-                document.getElementById('pop-img').src = found.img || 'https://via.placeholder.com/80';
-                document.getElementById('pop-name').innerText = found.name;
-                document.getElementById('pop-code').innerText = found.code;
-                
-                let linksHtml = '';
-                if (found.links && Array.isArray(found.links) && found.links.length > 0) {
-                    found.links.forEach(l => {
-                        let icon = getIconClass(l.type);
-                        linksHtml += `<a href="${l.url}" target="_blank" class="hover:scale-125 transition"><i class="${icon}"></i></a>`;
-                    });
-                } else {
-                    linksHtml = `<span class="text-xs text-gray-400">No social links added</span>`;
-                }
-                document.getElementById('pop-links').innerHTML = linksHtml;
-                document.getElementById('profile-modal').classList.remove('hidden');
+                showProfileModal(found);
             } else {
                 alert("Member not found with this code.");
             }
         }
 
         loadMembers();
-    </script>
 
-    <!-- Three.js Globe Script & Modal Functions -->
-    <script>
+        // Three.js Globe & Stationary Avatar Pins
         const container = document.getElementById('globe-container');
+        const pinsOverlay = document.getElementById('globe-pins-overlay');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -457,17 +484,65 @@
 
         camera.position.z = 6;
 
+        function renderGlobePins() {
+            pinsOverlay.innerHTML = '';
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            globe.updateMatrixWorld();
+
+            globePinsData.forEach(item => {
+                const radius = 2.05;
+                const x = radius * Math.cos(item.theta) * Math.sin(item.phi);
+                const y = radius * Math.sin(item.theta) * Math.sin(item.phi);
+                const z = radius * Math.cos(item.phi);
+
+                const vector = new THREE.Vector3(x, y, z);
+                vector.applyMatrix4(globe.matrixWorld);
+                vector.project(camera);
+
+                const vectorLocal = new THREE.Vector3(x, y, z);
+                const normalMatrix = new THREE.Matrix3().getNormalMatrix(globe.matrixWorld);
+                const worldNormal = vectorLocal.clone().applyMatrix3(normalMatrix).normalize();
+                const cameraDir = camera.position.clone().sub(globe.position).normalize();
+                const isFront = worldNormal.dot(cameraDir) > 0.0;
+
+                if (vector.z < 1 && isFront) {
+                    const screenX = (vector.x *  0.5 + 0.5) * width;
+                    const screenY = (vector.y * -0.5 + 0.5) * height;
+
+                    const pinEl = document.createElement('div');
+                    pinEl.className = 'creator-map-pin';
+                    pinEl.style.left = `${screenX}px`;
+                    pinEl.style.top = `${screenY}px`;
+                    pinEl.innerHTML = `
+                        <div class="w-9 h-9 rounded-full border-2 border-blue-400 overflow-hidden shadow-lg bg-black cursor-pointer">
+                            <img src="${item.member.img || 'https://via.placeholder.com/40'}" class="w-full h-full object-cover">
+                        </div>
+                    `;
+                    pinEl.onclick = () => showProfileModal(item.member);
+                    pinsOverlay.appendChild(pinEl);
+                }
+            });
+        }
+
         function animate() {
             requestAnimationFrame(animate);
             globe.rotation.y += 0.002;
             controls.update();
             renderer.render(scene, camera);
+            renderGlobePins();
         }
         animate();
 
         window.openJoinModal = function() { document.getElementById('join-modal').classList.remove('hidden'); }
         window.closeJoinModal = function() { document.getElementById('join-modal').classList.add('hidden'); }
-        window.openUpdateModal = function() { document.getElementById('update-modal').classList.remove('hidden'); }
+        window.openUpdateModal = function() { 
+            document.getElementById('code-check-section').classList.remove('hidden');
+            document.getElementById('update-form').classList.add('hidden');
+            document.getElementById('update-code').value = '';
+            document.getElementById('update-modal').classList.remove('hidden'); 
+        }
         window.closeUpdateModal = function() { document.getElementById('update-modal').classList.add('hidden'); }
         window.closeSuccessModal = function() { document.getElementById('success-modal').classList.add('hidden'); }
         window.closeProfileModal = function() { document.getElementById('profile-modal').classList.add('hidden'); }
