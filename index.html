@@ -70,7 +70,7 @@
             </div>
             <span class="text-xs mt-1">Join</span>
         </button>
-        <button onclick="openUpdateModalDirect()" class="flex flex-col items-center text-gray-400 hover:text-white">
+        <button onclick="openEditLinksPortal()" class="flex flex-col items-center text-gray-400 hover:text-white">
             <i class="fa-solid fa-user-pen text-lg"></i>
             <span class="text-xs mt-1">Edit Links</span>
         </button>
@@ -88,7 +88,7 @@
                 <span id="display-code" class="text-4xl font-extrabold text-amber-400 tracking-widest">0000</span>
             </div>
 
-            <p class="text-xs text-gray-400 mb-4">Save this code to edit your links later!</p>
+            <p class="text-xs text-gray-400 mb-4">Save this code to view or edit your profile later!</p>
             <button onclick="closeSuccessModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl font-semibold transition">Got It!</button>
         </div>
     </div>
@@ -110,6 +110,19 @@
             <button onclick="openUpdateModalFromProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-plus-circle"></i> Add More Links
             </button>
+        </div>
+    </div>
+
+    <!-- Code Verification / Entry Modal for Edit Links -->
+    <div id="code-entry-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 w-full max-w-sm rounded-2xl p-6 text-center relative">
+            <button onclick="closeCodeEntryModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-bold text-blue-400 mb-2">Enter Your Code</h3>
+            <p class="text-xs text-gray-400 mb-4">Enter your 4-digit code to open your profile & add more links.</p>
+            
+            <input type="text" id="portal-code-input" placeholder="4-Digit Code" maxlength="4" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-center text-xl tracking-widest focus:outline-none focus:border-blue-500 mb-4">
+            
+            <button onclick="verifyPortalCode()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition">Open Profile</button>
         </div>
     </div>
 
@@ -166,21 +179,13 @@
     <div id="update-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-gray-900 border border-gray-800 w-full max-w-md rounded-2xl p-6 relative my-8">
             <button onclick="closeUpdateModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
-            <h3 class="text-xl font-bold mb-4 text-blue-400">Add New Links</h3>
+            <h3 class="text-xl font-bold mb-4 text-blue-400">Add More Links</h3>
             
-            <div id="code-check-section" class="space-y-4">
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Enter Your 4-Digit Code</label>
-                    <input type="text" id="update-code" maxlength="4" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
-                </div>
-                <button type="button" onclick="verifyCodeForUpdate()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-semibold transition">Next / Verify Code</button>
-            </div>
-
-            <form id="update-form" class="space-y-4 hidden mt-4">
+            <form id="update-form" class="space-y-4">
                 <div id="unadded-links-container" class="space-y-2">
                     <!-- Only un-added link inputs will load here -->
                 </div>
-                <button type="submit" id="update-btn" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold transition mt-2">Add New Links</button>
+                <button type="submit" id="update-btn" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold transition mt-2">Save New Links</button>
             </form>
         </div>
     </div>
@@ -205,7 +210,6 @@
 
         window.allMembers = [];
         let globePinsData = [];
-        let currentEditingCode = null;
         let activeProfileForUpdate = null;
 
         async function loadMembers() {
@@ -266,7 +270,6 @@
             });
         }
 
-        // Check if device already joined
         window.handleJoinClick = function() {
             if(localStorage.getItem('practical_line_joined')) {
                 const savedCode = localStorage.getItem('practical_line_joined_code');
@@ -276,7 +279,6 @@
             document.getElementById('join-modal').classList.remove('hidden');
         }
 
-        // Join Form Submit
         document.getElementById('join-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
@@ -333,7 +335,6 @@
                         try {
                             await setDoc(doc(db, "users", code), { name, code, img: compressedImg, links });
                             
-                            // Save restriction in localStorage
                             localStorage.setItem('practical_line_joined', 'true');
                             localStorage.setItem('practical_line_joined_code', code);
 
@@ -360,9 +361,19 @@
             }
         });
 
-        // Verify Code and show only un-added links for update
-        window.verifyCodeForUpdate = async function() {
-            const code = document.getElementById('update-code').value.trim();
+        // Edit Links Portal Button Click -> Opens Code Entry
+        window.openEditLinksPortal = function() {
+            document.getElementById('portal-code-input').value = '';
+            document.getElementById('code-entry-modal').classList.remove('hidden');
+        }
+
+        window.closeCodeEntryModal = function() {
+            document.getElementById('code-entry-modal').classList.add('hidden');
+        }
+
+        // Verify Code entered in Edit Links Portal and open profile directly
+        window.verifyPortalCode = async function() {
+            const code = document.getElementById('portal-code-input').value.trim();
             if(!code) {
                 alert("Please enter your 4-digit code!");
                 return;
@@ -377,59 +388,64 @@
                     return;
                 }
 
-                currentEditingCode = code;
-                const userData = docSnap.data();
-                const existingLinks = userData.links || [];
-                const existingTypes = existingLinks.map(l => l.type);
-
-                const allPlatforms = [
-                    { id: 'instagram', name: 'Instagram URL', icon: 'fa-brands fa-instagram text-pink-500' },
-                    { id: 'youtube', name: 'YouTube URL', icon: 'fa-brands fa-youtube text-red-500' },
-                    { id: 'facebook', name: 'Facebook URL', icon: 'fa-brands fa-facebook text-blue-500' },
-                    { id: 'moj', name: 'Moj URL', icon: 'fa-solid fa-video text-amber-500' },
-                    { id: 'twitter', name: 'Twitter / X URL', icon: 'fa-brands fa-twitter text-sky-400' },
-                    { id: 'website', name: 'Website URL', icon: 'fa-solid fa-globe text-green-400' }
-                ];
-
-                const container = document.getElementById('unadded-links-container');
-                container.innerHTML = '';
-
-                let unaddedCount = 0;
-                allPlatforms.forEach(p => {
-                    if(!existingTypes.includes(p.id)) {
-                        unaddedCount++;
-                        container.innerHTML += `
-                            <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
-                                <i class="${p.icon} text-lg w-6 text-center"></i>
-                                <input type="url" id="up-${p.id}" placeholder="${p.name}" class="w-full bg-transparent text-sm text-white focus:outline-none">
-                            </div>
-                        `;
-                    }
-                });
-
-                if(unaddedCount === 0) {
-                    container.innerHTML = `<p class="text-amber-400 text-xs text-center py-2">You have already added all available social links!</p>`;
-                }
-
-                document.getElementById('code-check-section').classList.add('hidden');
-                document.getElementById('update-form').classList.remove('hidden');
-
+                closeCodeEntryModal();
+                showProfileModal({ id: docSnap.id, ...docSnap.data() });
             } catch(err) {
-                alert("Error checking code: " + err.message);
+                alert("Error: " + err.message);
             }
         }
 
-        // Update Links Form Submit
+        // Open Add More Links Modal showing only un-added links
+        window.openUpdateModalFromProfile = function() {
+            closeProfileModal();
+            if(!activeProfileForUpdate) return;
+
+            const existingLinks = activeProfileForUpdate.links || [];
+            const existingTypes = existingLinks.map(l => l.type);
+
+            const allPlatforms = [
+                { id: 'instagram', name: 'Instagram URL', icon: 'fa-brands fa-instagram text-pink-500' },
+                { id: 'youtube', name: 'YouTube URL', icon: 'fa-brands fa-youtube text-red-500' },
+                { id: 'facebook', name: 'Facebook URL', icon: 'fa-brands fa-facebook text-blue-500' },
+                { id: 'moj', name: 'Moj URL', icon: 'fa-solid fa-video text-amber-500' },
+                { id: 'twitter', name: 'Twitter / X URL', icon: 'fa-brands fa-twitter text-sky-400' },
+                { id: 'website', name: 'Website URL', icon: 'fa-solid fa-globe text-green-400' }
+            ];
+
+            const container = document.getElementById('unadded-links-container');
+            container.innerHTML = '';
+
+            let unaddedCount = 0;
+            allPlatforms.forEach(p => {
+                if(!existingTypes.includes(p.id)) {
+                    unaddedCount++;
+                    container.innerHTML += `
+                        <div class="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2">
+                            <i class="${p.icon} text-lg w-6 text-center"></i>
+                            <input type="url" id="up-${p.id}" placeholder="${p.name}" class="w-full bg-transparent text-sm text-white focus:outline-none">
+                        </div>
+                    `;
+                }
+            });
+
+            if(unaddedCount === 0) {
+                container.innerHTML = `<p class="text-amber-400 text-xs text-center py-2">You have already added all available social links!</p>`;
+            }
+
+            document.getElementById('update-modal').classList.remove('hidden');
+        }
+
+        // Submit new links
         document.getElementById('update-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!currentEditingCode) return;
+            if(!activeProfileForUpdate) return;
 
             const updateBtn = document.getElementById('update-btn');
-            updateBtn.innerText = "Adding Links...";
+            updateBtn.innerText = "Saving Links...";
             updateBtn.disabled = true;
 
             try {
-                const docRef = doc(db, "users", currentEditingCode);
+                const docRef = doc(db, "users", activeProfileForUpdate.code);
                 const docSnap = await getDoc(docRef);
                 let userData = docSnap.data();
                 let existingLinks = userData.links || [];
@@ -447,16 +463,15 @@
                 closeUpdateModal();
                 loadMembers();
                 
-                if(activeProfileForUpdate) {
-                    const updatedSnap = await getDoc(docRef);
-                    if(updatedSnap.exists()) {
-                        showProfileModal({ id: updatedSnap.id, ...updatedSnap.data() });
-                    }
+                // Refresh profile modal
+                const updatedSnap = await getDoc(docRef);
+                if(updatedSnap.exists()) {
+                    showProfileModal({ id: updatedSnap.id, ...updatedSnap.data() });
                 }
             } catch (err) {
                 alert("Error updating: " + err.message);
             } finally {
-                updateBtn.innerText = "Add New Links";
+                updateBtn.innerText = "Save New Links";
                 updateBtn.disabled = false;
             }
         });
@@ -566,25 +581,6 @@
 
         window.openJoinModal = function() { document.getElementById('join-modal').classList.remove('hidden'); }
         window.closeJoinModal = function() { document.getElementById('join-modal').classList.add('hidden'); }
-        
-        window.openUpdateModalDirect = function() { 
-            document.getElementById('code-check-section').classList.remove('hidden');
-            document.getElementById('update-form').classList.add('hidden');
-            document.getElementById('update-code').value = '';
-            document.getElementById('update-modal').classList.remove('hidden'); 
-        }
-
-        window.openUpdateModalFromProfile = function() {
-            closeProfileModal();
-            if(activeProfileForUpdate) {
-                document.getElementById('update-code').value = activeProfileForUpdate.code;
-                verifyCodeForUpdate();
-                document.getElementById('update-modal').classList.remove('hidden');
-            } else {
-                openUpdateModalDirect();
-            }
-        }
-
         window.closeUpdateModal = function() { document.getElementById('update-modal').classList.add('hidden'); }
         window.closeSuccessModal = function() { document.getElementById('success-modal').classList.add('hidden'); }
         window.closeProfileModal = function() { document.getElementById('profile-modal').classList.add('hidden'); }
